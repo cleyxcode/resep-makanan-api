@@ -22,8 +22,7 @@ class ApiService {
       // Panggil API
       final response = await http.get(url);
 
-      print('Status Code: ${response.statusCode}'); // untuk debug
-      print('Response Body: ${response.body}'); // untuk debug
+ 
 
       if (response.statusCode == 200) {
         // Berhasil
@@ -35,6 +34,32 @@ class ApiService {
       }
     } catch (e) {
       print('Error: $e'); // untuk debug
+      throw Exception('Error: $e');
+    }
+  }
+
+  // Fungsi untuk mendapatkan detail resep
+  static Future<Recipe> getRecipeDetails(int recipeId) async {
+    try {
+      // URL endpoint untuk detail resep
+      final url = Uri.parse(
+          '$baseUrl/recipes/$recipeId/information?apiKey=$apiKey');
+
+   
+      final response = await http.get(url);
+
+      
+
+      if (response.statusCode == 200) {
+        // Berhasil
+        final jsonData = json.decode(response.body);
+        return Recipe.fromJson(jsonData);
+      } else {
+        // Gagal
+        throw Exception('Gagal memuat detail resep: ${response.statusCode}');
+      }
+    } catch (e) {
+     
       throw Exception('Error: $e');
     }
   }

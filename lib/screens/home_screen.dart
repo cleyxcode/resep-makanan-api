@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../services/api_service.dart';
+import '../widgets/search_widget.dart';
+import 'recipe_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +15,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Recipe> recipes = []; // list untuk menyimpan resep
   bool isLoading = true; // status loading
   String errorMessage = ''; // pesan error
+  String currentQuery = 'pasta'; // query pencarian saat ini
 
   @override
   void initState() {
@@ -21,24 +24,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Fungsi untuk memuat data resep
-  Future<void> loadRecipes() async {
+  Future<void> loadRecipes({String? query}) async {
     try {
       setState(() {
         isLoading = true;
         errorMessage = '';
       });
 
+      final searchQuery = query ?? currentQuery;
+      
       final response = await ApiService.searchRecipes(
-        query: 'pasta', // cari resep pasta
+        query: searchQuery,
         number: 10, // ambil 10 resep
       );
 
       setState(() {
         recipes = response.results;
         isLoading = false;
+        currentQuery = searchQuery;
       });
 
-      print('Berhasil memuat ${recipes.length} resep'); // debug
+      print('Berhasil memuat ${recipes.length} resep untuk "$searchQuery"'); // debug
     } catch (e) {
       setState(() {
         errorMessage = e.toString();
@@ -46,6 +52,18 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       print('Error di loadRecipes: $e'); // debug
     }
+  }
+
+  // Fungsi untuk handle pencarian
+  void _onSearch(String query) {
+    if (query.trim().isNotEmpty) {
+      loadRecipes(query: query.trim());
+    }
+  }
+
+  // Fungsi untuk clear pencarian
+  void _onClearSearch() {
+    loadRecipes(query: 'pasta'); // kembali ke default
   }
 
   @override
@@ -56,7 +74,20 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
       ),
-      body: buildBody(),
+      body: Column(
+        children: [
+          // Widget Pencarian
+          SearchWidget(
+            initialQuery: currentQuery,
+            onSearch: _onSearch,
+            onClear: _onClearSearch,
+          ),
+          // Hasil pencarian
+          Expanded(
+            child: buildBody(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -85,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(errorMessage),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: loadRecipes,
+              onPressed: () => loadRecipes(),
               child: const Text('Coba Lagi'),
             ),
           ],
@@ -93,8 +124,20 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } else if (recipes.isEmpty) {
       // Tidak ada data
-      return const Center(
-        child: Text('Tidak ada resep ditemukan'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text('Tidak ada resep ditemukan untuk "$currentQuery"'),
+            const SizedBox(height: 8),
+            const Text(
+              'Coba kata kunci lain',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
       );
     } else {
       // Tampilkan data resep
@@ -111,56 +154,88 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget buildRecipeCard(Recipe recipe) {
     return Card(
       margin: const EdgeInsets.all(8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            // Gambar resep
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.grey[300],
+      child: InkWell(
+        onTap: () {
+          // Navigasi ke halaman detail
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RecipeDetailScreen(recipe: recipe),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // Gambar resep
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[300],
+                ),
+                child: recipe.image.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          recipe.image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.image_not_supported);
+                          },
+                        ),
+                      )
+                    : const Icon(Icons.image_not_supported),
               ),
-              child: recipe.image.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        recipe.image,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(Icons.image_not_supported);
-                        },
+              const SizedBox(width: 12),
+              // Informasi resep
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      recipe.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                    )
-                  : const Icon(Icons.image_not_supported),
-            ),
-            const SizedBox(width: 12),
-            // Informasi resep
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    recipe.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'ID: ${recipe.id}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                    const SizedBox(height: 4),
+                    Text(
+                      'ID: ${recipe.id}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.touch_app,
+                          size: 14,
+                          color: Colors.orange,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Tap untuk detail',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
