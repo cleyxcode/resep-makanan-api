@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../services/api_service.dart';
+import '../widgets/favorite_button.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
   final Recipe recipe; // resep yang dipilih
@@ -60,6 +61,15 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         ),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
+        actions: [
+          // Tombol favorite di AppBar
+          FavoriteButton(
+            recipe: widget.recipe,
+            size: 28,
+            activeColor: Colors.white,
+            inactiveColor: Colors.white70,
+          ),
+        ],
       ),
       body: buildBody(),
     );
@@ -180,12 +190,23 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget buildTitle() {
-    return Text(
-      detailedRecipe!.title,
-      style: const TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            detailedRecipe!.title,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        // Favorite button yang besar
+        FavoriteButton(
+          recipe: widget.recipe,
+          size: 32,
+        ),
+      ],
     );
   }
 

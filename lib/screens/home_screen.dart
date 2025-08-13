@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../services/api_service.dart';
+import '../services/favorite_service.dart';
 import '../widgets/search_widget.dart';
 import '../widgets/filter_widget.dart';
+import '../widgets/favorite_button.dart';
 import 'recipe_detail_screen.dart';
+import 'favorite_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -88,6 +91,58 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Recipe App'),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
+        actions: [
+          // Tombol ke halaman favorite
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FavoriteScreen(),
+                ),
+              );
+            },
+            icon: Stack(
+              children: [
+                const Icon(Icons.favorite),
+                // Badge untuk jumlah favorite
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: AnimatedBuilder(
+                    animation: FavoriteService(),
+                    builder: (context, child) {
+                      final count = FavoriteService().favoriteCount;
+                      if (count == 0) return const SizedBox.shrink();
+                      
+                      return Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            tooltip: 'Resep Favorite',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -253,6 +308,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+              ),
+              
+              // Favorite Button
+              FavoriteButton(
+                recipe: recipe,
+                size: 20,
               ),
             ],
           ),
