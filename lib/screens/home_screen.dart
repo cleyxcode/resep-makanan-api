@@ -16,19 +16,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Recipe> recipes = []; // list untuk menyimpan resep
-  bool isLoading = true; // status loading
-  String errorMessage = ''; // pesan error
-  String currentQuery = 'pasta'; // query pencarian saat ini
-  FilterData currentFilters = FilterData(); // filter saat ini
+  List<Recipe> recipes = [];
+  bool isLoading = true;
+  String errorMessage = '';
+  String currentQuery = '';
+  FilterData currentFilters = FilterData();
 
   @override
   void initState() {
     super.initState();
-    loadRecipes(); // panggil fungsi load data
+    loadRecipes();
   }
 
-  // Fungsi untuk memuat data resep
   Future<void> loadRecipes({String? query, FilterData? filters}) async {
     try {
       setState(() {
@@ -38,10 +37,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final searchQuery = query ?? currentQuery;
       final searchFilters = filters ?? currentFilters;
-      
+
       final response = await ApiService.searchRecipes(
         query: searchQuery,
-        number: 10, // ambil 10 resep
+        number: 10,
         diet: searchFilters.diet,
         type: searchFilters.mealType,
         maxReadyTime: searchFilters.maxReadyTime,
@@ -54,29 +53,26 @@ class _HomeScreenState extends State<HomeScreen> {
         currentFilters = searchFilters;
       });
 
-      print('Berhasil memuat ${recipes.length} resep untuk "$searchQuery" dengan filter'); // debug
+      print('Berhasil memuat ${recipes.length} resep untuk "$searchQuery" dengan filter');
     } catch (e) {
       setState(() {
         errorMessage = e.toString();
         isLoading = false;
       });
-      print('Error di loadRecipes: $e'); // debug
+      print('Error di loadRecipes: $e');
     }
   }
 
-  // Fungsi untuk handle pencarian
   void _onSearch(String query) {
     if (query.trim().isNotEmpty) {
       loadRecipes(query: query.trim());
     }
   }
 
-  // Fungsi untuk clear pencarian
   void _onClearSearch() {
-    loadRecipes(query: 'pasta'); // kembali ke default
+    loadRecipes(query: 'pasta');
   }
 
-  // Fungsi untuk handle filter
   void _onFiltersChanged(FilterData filters) {
     setState(() {
       currentFilters = filters;
@@ -88,11 +84,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recipe App'),
-        backgroundColor: Colors.orange,
+        title: const Text(
+          'Discover Recipes',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            fontFamily: 'Poppins', // Tambahkan font modern
+          ),
+        ),
+        backgroundColor: Colors.orange.shade600,
         foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
-          // Tombol ke halaman favorite
           IconButton(
             onPressed: () {
               Navigator.push(
@@ -104,8 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             icon: Stack(
               children: [
-                const Icon(Icons.favorite),
-                // Badge untuk jumlah favorite
+                const Icon(Icons.favorite_rounded, size: 28),
                 Positioned(
                   right: 0,
                   top: 0,
@@ -114,22 +116,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context, child) {
                       final count = FavoriteService().favoriteCount;
                       if (count == 0) return const SizedBox.shrink();
-                      
                       return Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade700,
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1),
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
+                          minWidth: 20,
+                          minHeight: 20,
                         ),
                         child: Text(
                           '$count',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -140,83 +142,128 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            tooltip: 'Resep Favorite',
+            tooltip: 'Favorite Recipes',
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Widget Pencarian
-          SearchWidget(
-            initialQuery: currentQuery,
-            onSearch: _onSearch,
-            onClear: _onClearSearch,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.orange.shade50, Colors.white],
           ),
-          // Widget Filter
-          FilterWidget(
-            currentFilters: currentFilters,
-            onFiltersChanged: _onFiltersChanged,
-          ),
-          // Hasil pencarian
-          Expanded(
-            child: buildBody(),
-          ),
-        ],
+        ),
+        child: Column(
+          children: [
+            SearchWidget(
+              initialQuery: currentQuery,
+              onSearch: _onSearch,
+              onClear: _onClearSearch,
+            ),
+            FilterWidget(
+              currentFilters: currentFilters,
+              onFiltersChanged: _onFiltersChanged,
+            ),
+            Expanded(
+              child: buildBody(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget buildBody() {
     if (isLoading) {
-      // Tampilkan loading
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+            ),
             SizedBox(height: 16),
-            Text('Memuat resep...'),
+            Text(
+              'Loading delicious recipes...',
+              style: TextStyle(fontSize: 16, fontFamily: 'Poppins'),
+            ),
           ],
         ),
       );
     } else if (errorMessage.isNotEmpty) {
-      // Tampilkan error
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, size: 64, color: Colors.red),
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
             const SizedBox(height: 16),
-            const Text('Error:'),
-            Text(errorMessage),
+            Text(
+              'Oops, something went wrong!',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Poppins',
+                color: Colors.red.shade400,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+              child: Text(
+                errorMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, fontFamily: 'Poppins'),
+              ),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => loadRecipes(),
-              child: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text(
+                'Try Again',
+                style: TextStyle(fontSize: 16, fontFamily: 'Poppins'),
+              ),
             ),
           ],
         ),
       );
     } else if (recipes.isEmpty) {
-      // Tidak ada data
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            Text('Tidak ada resep ditemukan untuk "$currentQuery"'),
+            Text(
+              'No recipes found for "$currentQuery"',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Poppins',
+              ),
+            ),
             const SizedBox(height: 8),
-            const Text(
-              'Coba kata kunci lain',
-              style: TextStyle(color: Colors.grey),
+            Text(
+              'Try a different keyword or adjust filters',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontFamily: 'Poppins',
+              ),
             ),
           ],
         ),
       );
     } else {
-      // Tampilkan data resep
       return ListView.builder(
+        padding: const EdgeInsets.all(8.0),
         itemCount: recipes.length,
         itemBuilder: (context, index) {
           final recipe = recipes[index];
@@ -228,10 +275,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget buildRecipeCard(Recipe recipe) {
     return Card(
-      margin: const EdgeInsets.all(8.0),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         onTap: () {
-          // Navigasi ke halaman detail
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -239,83 +289,130 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              // Gambar resep
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[300],
-                ),
-                child: recipe.image.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          recipe.image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.image_not_supported);
-                          },
-                        ),
-                      )
-                    : const Icon(Icons.image_not_supported),
-              ),
-              const SizedBox(width: 12),
-              // Informasi resep
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      recipe.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'ID: ${recipe.id}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.touch_app,
-                          size: 14,
-                          color: Colors.orange,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Tap untuk detail',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, Colors.orange.shade50],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Gambar resep
+                Hero(
+                  tag: 'recipe-image-${recipe.id}',
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.3),
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
-                  ],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: recipe.image.isNotEmpty
+                          ? Image.network(
+                              recipe.image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Icon(
+                                    Icons.restaurant_menu,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            )
+                          : Container(
+                              color: Colors.grey.shade200,
+                              child: const Icon(
+                                Icons.restaurant_menu,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
-              ),
-              
-              // Favorite Button
-              FavoriteButton(
-                recipe: recipe,
-                size: 20,
-              ),
-            ],
+                const SizedBox(width: 16),
+                // Informasi resep
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        recipe.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timer,
+                            size: 16,
+                            color: Colors.orange.shade600,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${recipe.readyInMinutes ?? 'N/A'} min',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.local_dining,
+                            size: 16,
+                            color: Colors.orange.shade600,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Tap for details',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Favorite Button
+                FavoriteButton(
+                  recipe: recipe,
+                  size: 24,
+                ),
+              ],
+            ),
           ),
         ),
       ),

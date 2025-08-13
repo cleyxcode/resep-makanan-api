@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 import '../widgets/favorite_button.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
-  final Recipe recipe; // resep yang dipilih
+  final Recipe recipe;
 
   const RecipeDetailScreen({
     super.key,
@@ -16,7 +16,7 @@ class RecipeDetailScreen extends StatefulWidget {
 }
 
 class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
-  Recipe? detailedRecipe; // detail resep dari API
+  Recipe? detailedRecipe;
   bool isLoading = true;
   String errorMessage = '';
 
@@ -34,7 +34,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       });
 
       final details = await ApiService.getRecipeDetails(widget.recipe.id);
-      
+
       setState(() {
         detailedRecipe = details;
         isLoading = false;
@@ -53,37 +53,70 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           widget.recipe.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
         ),
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.black.withOpacity(0.6), Colors.transparent],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
         actions: [
-          // Tombol favorite di AppBar
           FavoriteButton(
             recipe: widget.recipe,
             size: 28,
-            activeColor: Colors.white,
+            activeColor: Colors.red.shade400,
             inactiveColor: Colors.white70,
           ),
         ],
       ),
-      body: buildBody(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.orange.shade50, Colors.white],
+          ),
+        ),
+        child: buildBody(),
+      ),
     );
   }
 
   Widget buildBody() {
     if (isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Memuat detail resep...'),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade600),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Loading recipe details...',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Poppins',
+                color: Colors.black87,
+              ),
+            ),
           ],
         ),
       );
@@ -92,21 +125,65 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, size: 64, color: Colors.red),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade400,
+            ),
             const SizedBox(height: 16),
-            const Text('Gagal memuat detail resep'),
-            Text(errorMessage),
+            const Text(
+              'Failed to load recipe details',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Poppins',
+                color: Colors.black87,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+              child: Text(
+                errorMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Poppins',
+                  color: Colors.grey,
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: loadRecipeDetails,
-              child: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text(
+                'Try Again',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontFamily: 'Poppins',
+                ),
+              ),
             ),
           ],
         ),
       );
     } else if (detailedRecipe == null) {
       return const Center(
-        child: Text('Detail resep tidak ditemukan'),
+        child: Text(
+          'Recipe details not found',
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Poppins',
+            color: Colors.black87,
+          ),
+        ),
       );
     } else {
       return buildRecipeDetail();
@@ -114,78 +191,89 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   }
 
   Widget buildRecipeDetail() {
-    final recipe = detailedRecipe!;
-    
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar resep
           buildRecipeImage(),
-          
-          const SizedBox(height: 20),
-          
-          // Judul resep
-          buildTitle(),
-          
-          const SizedBox(height: 16),
-          
-          // Info singkat (waktu, porsi)
-          buildQuickInfo(),
-          
-          const SizedBox(height: 20),
-          
-          // Ringkasan
-          if (recipe.summary != null) buildSummary(),
-          
-          const SizedBox(height: 20),
-          
-          // Bahan-bahan
-          if (recipe.ingredients != null && recipe.ingredients!.isNotEmpty)
-            buildIngredients(),
-          
-          const SizedBox(height: 20),
-          
-          // Instruksi
-          if (recipe.instructions != null) buildInstructions(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                buildTitle(),
+                const SizedBox(height: 16),
+                buildQuickInfo(),
+                const SizedBox(height: 20),
+                if (detailedRecipe!.summary != null) buildSummary(),
+                const SizedBox(height: 20),
+                if (detailedRecipe!.ingredients != null &&
+                    detailedRecipe!.ingredients!.isNotEmpty)
+                  buildIngredients(),
+                const SizedBox(height: 20),
+                if (detailedRecipe!.instructions != null) buildInstructions(),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget buildRecipeImage() {
-    return Container(
-      width: double.infinity,
-      height: 250,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey[300],
-      ),
-      child: detailedRecipe!.image.isNotEmpty
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                detailedRecipe!.image,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Center(
+    return Hero(
+      tag: 'recipe-image-${widget.recipe.id}',
+      child: Container(
+        width: double.infinity,
+        height: 300,
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 2,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          ),
+          child: detailedRecipe!.image.isNotEmpty
+              ? Image.network(
+                  detailedRecipe!.image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: Icon(
+                          Icons.restaurant_menu,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : Container(
+                  color: Colors.grey.shade200,
+                  child: const Center(
                     child: Icon(
-                      Icons.image_not_supported,
+                      Icons.restaurant_menu,
                       size: 64,
                       color: Colors.grey,
                     ),
-                  );
-                },
-              ),
-            )
-          : const Center(
-              child: Icon(
-                Icons.image_not_supported,
-                size: 64,
-                color: Colors.grey,
-              ),
-            ),
+                  ),
+                ),
+        ),
+      ),
     );
   }
 
@@ -196,61 +284,64 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           child: Text(
             detailedRecipe!.title,
             style: const TextStyle(
-              fontSize: 24,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
+              fontFamily: 'Poppins',
+              color: Colors.black87,
             ),
           ),
         ),
-        // Favorite button yang besar
         FavoriteButton(
           recipe: widget.recipe,
           size: 32,
+          activeColor: Colors.red.shade400,
+          inactiveColor: Colors.grey.shade400,
         ),
       ],
     );
   }
 
   Widget buildQuickInfo() {
-    return Row(
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
       children: [
         if (detailedRecipe!.readyInMinutes != null)
           buildInfoChip(
-            Icons.schedule,
-            '${detailedRecipe!.readyInMinutes} menit',
-            Colors.blue,
+            Icons.timer,
+            '${detailedRecipe!.readyInMinutes} min',
+            Colors.orange.shade600,
           ),
-        
-        if (detailedRecipe!.servings != null) ...[
-          const SizedBox(width: 12),
+        if (detailedRecipe!.servings != null)
           buildInfoChip(
-            Icons.people,
-            '${detailedRecipe!.servings} porsi',
-            Colors.green,
+            Icons.restaurant,
+            '${detailedRecipe!.servings} servings',
+            Colors.green.shade600,
           ),
-        ],
       ],
     );
   }
 
   Widget buildInfoChip(IconData icon, String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 6),
           Text(
             text,
             style: TextStyle(
               color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
             ),
           ),
         ],
@@ -263,26 +354,36 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Tentang Resep',
+          'About This Recipe',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+            color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[300]!),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Text(
-            // Remove HTML tags dari summary
             detailedRecipe!.summary!.replaceAll(RegExp(r'<[^>]*>'), ''),
             style: const TextStyle(
               fontSize: 14,
-              height: 1.5,
+              height: 1.6,
+              fontFamily: 'Poppins',
+              color: Colors.black87,
             ),
           ),
         ),
@@ -295,40 +396,46 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Bahan-bahan',
+          'Ingredients',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+            color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
-        ...detailedRecipe!.ingredients!.map((ingredient) => 
-          Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.all(10),
+        const SizedBox(height: 12),
+        ...detailedRecipe!.ingredients!.map(
+          (ingredient) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.orange[200]!),
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade100),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.circle,
-                  size: 6,
-                  color: Colors.orange,
+                Icon(
+                  Icons.check_circle,
+                  size: 18,
+                  color: Colors.orange.shade600,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     ingredient,
-                    style: const TextStyle(fontSize: 14),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: 'Poppins',
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
               ],
             ),
-          )
-        ).toList(),
+          ),
+        ),
       ],
     );
   }
@@ -338,26 +445,36 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Cara Memasak',
+          'Instructions',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+            color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[200]!),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Text(
-            // Remove HTML tags dari instructions
             detailedRecipe!.instructions!.replaceAll(RegExp(r'<[^>]*>'), ''),
             style: const TextStyle(
               fontSize: 14,
               height: 1.6,
+              fontFamily: 'Poppins',
+              color: Colors.black87,
             ),
           ),
         ),
