@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../services/api_service.dart';
 import '../widgets/search_widget.dart';
+import '../widgets/filter_widget.dart';
 import 'recipe_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = true; // status loading
   String errorMessage = ''; // pesan error
   String currentQuery = 'pasta'; // query pencarian saat ini
+  FilterData currentFilters = FilterData(); // filter saat ini
 
   @override
   void initState() {
@@ -24,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Fungsi untuk memuat data resep
-  Future<void> loadRecipes({String? query}) async {
+  Future<void> loadRecipes({String? query, FilterData? filters}) async {
     try {
       setState(() {
         isLoading = true;
@@ -32,19 +34,24 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       final searchQuery = query ?? currentQuery;
+      final searchFilters = filters ?? currentFilters;
       
       final response = await ApiService.searchRecipes(
         query: searchQuery,
         number: 10, // ambil 10 resep
+        diet: searchFilters.diet,
+        type: searchFilters.mealType,
+        maxReadyTime: searchFilters.maxReadyTime,
       );
 
       setState(() {
         recipes = response.results;
         isLoading = false;
         currentQuery = searchQuery;
+        currentFilters = searchFilters;
       });
 
-      print('Berhasil memuat ${recipes.length} resep untuk "$searchQuery"'); // debug
+      print('Berhasil memuat ${recipes.length} resep untuk "$searchQuery" dengan filter'); // debug
     } catch (e) {
       setState(() {
         errorMessage = e.toString();
@@ -66,6 +73,14 @@ class _HomeScreenState extends State<HomeScreen> {
     loadRecipes(query: 'pasta'); // kembali ke default
   }
 
+  // Fungsi untuk handle filter
+  void _onFiltersChanged(FilterData filters) {
+    setState(() {
+      currentFilters = filters;
+    });
+    loadRecipes(filters: filters);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +96,11 @@ class _HomeScreenState extends State<HomeScreen> {
             initialQuery: currentQuery,
             onSearch: _onSearch,
             onClear: _onClearSearch,
+          ),
+          // Widget Filter
+          FilterWidget(
+            currentFilters: currentFilters,
+            onFiltersChanged: _onFiltersChanged,
           ),
           // Hasil pencarian
           Expanded(
